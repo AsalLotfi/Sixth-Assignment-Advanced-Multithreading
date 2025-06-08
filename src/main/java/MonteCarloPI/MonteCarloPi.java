@@ -1,8 +1,9 @@
 package MonteCarloPI;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.*;
 
 public class MonteCarloPi {
 
@@ -25,31 +26,59 @@ public class MonteCarloPi {
         endTime = System.nanoTime();
         System.out.println("Monte Carlo Pi Approximation (Multi-threaded): " + piWithThreads);
         System.out.println("Time taken (Multi-threaded): " + (endTime - startTime) / 1_000_000 + " ms");
-
-        // TODO: After completing the implementation, reflect on the questions in the description of this task in the README file
-        //       and include your answers in your report file.
     }
 
     // Monte Carlo Pi Approximation without threads
     public static double estimatePiWithoutThreads(long numPoints)
     {
-        // TODO: Implement this method to calculate Pi using a single thread
-        return 0;
+        Random random = new Random();
+        long insideCircle = 0;
+
+        for (long i = 0; i < numPoints; i++) {
+            double x = random.nextDouble() * 2 - 1; // Value between -1.0 and 1.0
+            double y = random.nextDouble() * 2 - 1;
+
+            if ((x * x) + (y * y) <= 1) {
+                insideCircle++;
+            }
+        }
+        return 4.0 * insideCircle / numPoints;
     }
 
     // Monte Carlo Pi Approximation with threads
     public static double estimatePiWithThreads(long numPoints, int numThreads) throws InterruptedException, ExecutionException
     {
-        // TODO: Implement this method to calculate Pi using multiple threads
-
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        List<Future<Long>> futures = new ArrayList<>();
 
-        // HINT: You may need to create a variable to *safely* keep track of points that fall inside the circle
-        // HINT: Each thread should generate and process a subset of the total points
+        long pointsPerThread = numPoints / numThreads;
 
-        // TODO: After submitting all tasks, shut down the executor to prevent new tasks
-        // TODO: wait for the executor to be fully terminated
-        // TODO: Calculate and return the final estimation of Pi
-        return 0;
+        // Submit one task per thread
+        for (int i = 0; i < numThreads; i++) {
+            Callable<Long> task = () -> {
+                Random random = new Random();
+                long insideCircle = 0;
+                for (long j = 0; j < pointsPerThread; j++) {
+                    double x = random.nextDouble() * 2 - 1;
+                    double y = random.nextDouble() * 2 - 1;
+                    if (x * x + y * y <= 1) {
+                        insideCircle++;
+                    }
+                }
+                return insideCircle;
+            };
+            futures.add(executor.submit(task));
+        }
+
+        // Gather results
+        long totalInsideCircle = 0;
+        for (Future<Long> future : futures) {
+            totalInsideCircle += future.get(); // get() blocks until the result is ready
+        }
+
+        executor.shutdown(); // No more tasks will be accepted
+        executor.awaitTermination(1, TimeUnit.MINUTES); // Wait for all tasks to finish
+
+        return 4.0 * totalInsideCircle / numPoints;
     }
 }

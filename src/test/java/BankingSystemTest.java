@@ -1,3 +1,5 @@
+package test.java;
+
 import Banking.BankAccount;
 import Banking.BankingMain;
 import org.junit.jupiter.api.BeforeAll;
